@@ -1,0 +1,10 @@
+#!I:\MSU\Intel\IntelProject\Intelenv\Scripts\python.exe
+# -*- coding: iso-8859-1 -*-
+
+
+import sys
+
+
+if __name__ == "__main__":
+	import pycoco
+	sys.exit(pycoco.main())
