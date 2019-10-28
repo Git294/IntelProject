@@ -78,4 +78,5 @@ def hsi1(img_shape=(256, 256, 50, 1), attention=True):
     return Model(d0, fc1)
 
 
-
+net = hsi1(img_shape=(256, 256, 10, 1))
+net.summary()
