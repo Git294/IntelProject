@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-GENERADOR DE DATA EN KERAS
+Keras Data Generator for Data Augmentation
 """
 import numpy as np
 import keras
@@ -11,7 +11,7 @@ import gdal
 
 class DataGenerator(keras.utils.Sequence):
 
-    def __init__(self, list_IDs, batch_size=1, dim=256, n_channels=200,
+    def __init__(self, list_IDs, batch_size=1, dim=128, n_channels=200,
                  shuffle=True):
         """Initialization"""
         self.dim = dim
@@ -48,16 +48,75 @@ class DataGenerator(keras.utils.Sequence):
         p = random.randint(0, 1)
         if p:
             x = np.flip(x, 1)
+
+        p = random.randint(0, 1)
+        if p:
+            x = np.flip(x, 0)
         return x
 
-    def randomzoom(self, x, zoom):
+    def randomzoom(self, x, zoom, dim):
         p = random.randint(0, zoom)
         offset1 = int(x.shape[0] * p / 100.) * 2
         offset2 = int(x.shape[1] * p / 100.) * 2
         x2 = cv2.resize(x[int(offset1 / 2):x.shape[0] - int(offset1 / 2),
                         int(offset2 / 2):x.shape[1] - int(offset2 / 2), :],
-                        (self.dim, self.dim))
+                        (dim, dim))
         return x2
+
+    def segment_produce(self, im):
+
+        # Apply Grab-Cut
+        y = cv2.cvtColor(im, cv2.COLOR_GRAY2BGR)
+        # Rectange values: start x, start y, width, height
+        rectangle = (10, 10, y.shape[1] - 20, y.shape[0] - 20)
+        # Create initial mask
+        mask = np.zeros(y.shape[:2], np.uint8)
+
+        # Create temporary arrays used by grabCut
+        bgdModel = np.zeros((1, 65), np.float64)
+        fgdModel = np.zeros((1, 65), np.float64)
+
+        # Run grabCut
+        cv2.grabCut(y,  # Our image
+                    mask,  # The Mask
+                    rectangle,  # Our rectangle
+                    bgdModel,  # Temporary array for background
+                    fgdModel,  # Temporary array for background
+                    5,  # Number of iterations
+                    cv2.GC_INIT_WITH_RECT)  # Initiative using our rectangle
+
+        # Create mask where sure and likely backgrounds set to 0, otherwise 1
+        mask_2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+
+        # Multiply image with new mask to subtract background
+        image_rgb_nobg = y * mask_2[:, :, np.newaxis]
+
+        # Morphological erosion and dilation
+        kernel = np.ones((7, 7), np.uint8)
+        image_rgb_nobg = cv2.erode(image_rgb_nobg, kernel, iterations=1)
+        image_rgb_nobg = cv2.dilate(image_rgb_nobg, kernel, iterations=1)
+
+        mask = mask * 0
+        mask[(image_rgb_nobg[:, :, 0] == 0) & (image_rgb_nobg[:, :, 1] == 0) & (image_rgb_nobg[:, :, 2] == 0)] = 255
+        mask = 255 - mask
+
+        return mask
+
+    def randomcrop(self, im, d):
+        t = 0
+        im2 = im
+        while t <= 0.8:  # makes sure that more than 80% of the cropped image is different than zero
+            x = random.randint(0, im.shape[1] - d)
+            y = random.randint(0, im.shape[0] - d)
+            im2 = im[y:y + d, x:x + d]
+            r, c = np.nonzero(im2[:, :, 0])
+            t = c.size / (im2.shape[0] * im2.shape[1])
+
+        # Adds a random rotation
+        p = random.randint(0, 1)
+        if p:
+            im2 = np.rot90(im2)
+        return im2
 
     def __data_generation(self, list_IDs_temp):
         """Genera data"""  # X : (n_samples, *dim, n_channels)
@@ -80,13 +139,23 @@ class DataGenerator(keras.utils.Sequence):
                 img_array = rb.ReadAsArray()
                 img[:, :, ind] = img_array
 
-            # Applies random transformations
+            # Applies random flip (horizontal and vertical)
             img = self.randomflip(img)
-            img = self.randomzoom(img, 10)
 
-            # basepath = os.getcwd()[:-7]
-            # cv2.imwrite(basepath + '//Pruebas//' + os.path.basename(addr)[:-4] + "_orig.png", img2)
-            # cv2.imwrite(basepath + '//Pruebas//' + os.path.basename(addr)[:-4] + "_mask.png", mask2*255)
+            # Extract that band 260 to segment the produce and remove background
+            num = 260
+            band2segment = cv2.equalizeHist(np.uint8(img[:, :, num] * 255 /
+                                                     (np.max(img[:, :, num]) - np.min(img[:, :, num]))))
+            band2segment = cv2.medianBlur(band2segment, 3)  # Applies median filter to reduce noise
+            msk = self.segment_produce(band2segment)
+
+            # Calculate bounding box in real image
+            rows, cols = np.nonzero(msk)
+            img[msk == 0] = np.zeros([1, img.shape[2]])
+            img = img[rows.min():rows.max(), cols.min():cols.max(), :]
+
+            # Apply random crop
+            img = self.randomcrop(img, self.dim)
 
             x[i, ] = np.reshape(img, (self.dim, self.dim, self.n_channels, 1))
             y[i, ] = [0 if 'b' in addr else 1]

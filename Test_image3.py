@@ -123,32 +123,32 @@ rows, cols = np.nonzero(msk)
 img[msk == 0] = np.zeros([1, img.shape[2]])    # change for img
 img = img[rows.min():rows.max(), cols.min():cols.max(), :]  # change for img
 
-# Comment from here
-# Get color image (R:121, G:77, B:33)
-imp = np.zeros((img.shape[0], img.shape[1], 3))
-imp[:, :, 2] = img[:, :, 121]
-imp[:, :, 1] = img[:, :, 77]
-imp[:, :, 0] = img[:, :, 50]
-imp = np.uint8(imp * 255 / (np.max(imp) - np.min(imp)))
-clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-imp[:, :, 0] = cv2.medianBlur(clahe.apply(imp[:, :, 0]), 3)
-imp[:, :, 0][imp[:, :, 0] < 15] = 0
-imp[:, :, 1] = cv2.medianBlur(clahe.apply(imp[:, :, 1]), 3)
-imp[:, :, 1][imp[:, :, 1] < 15] = 0
-imp[:, :, 2] = cv2.medianBlur(clahe.apply(imp[:, :, 2]), 3)
-imp[:, :, 2][imp[:, :, 2] < 15] = 0
-rgb = np.uint8(np.clip(imp, 0, 255))
-plt.figure()
-plt.imshow(rgb)
-plt.show()
-
-cv2.imwrite('G:\\MSU\\Intel\\Images_report\\segment.jpg', rgb)
-
-rgb2 = randomcrop(rgb, dim)
-cv2.imwrite('G:\\MSU\\Intel\\Images_report\\random1.jpg', rgb2)
-rgb2 = randomcrop(rgb, dim)
-cv2.imwrite('G:\\MSU\\Intel\\Images_report\\random2.jpg', rgb2)
-rgb2 = randomcrop(rgb, dim)
-cv2.imwrite('G:\\MSU\\Intel\\Images_report\\random3.jpg', rgb2)
-rgb2 = randomcrop(rgb, dim)
-cv2.imwrite('G:\\MSU\\Intel\\Images_report\\random4.jpg', rgb2)
+# # Comment from here
+# # Get color image (R:121, G:77, B:33)
+# imp = np.zeros((img.shape[0], img.shape[1], 3))
+# imp[:, :, 2] = img[:, :, 121]
+# imp[:, :, 1] = img[:, :, 77]
+# imp[:, :, 0] = img[:, :, 50]
+# imp = np.uint8(imp * 255 / (np.max(imp) - np.min(imp)))
+# clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+# imp[:, :, 0] = cv2.medianBlur(clahe.apply(imp[:, :, 0]), 3)
+# imp[:, :, 0][imp[:, :, 0] < 15] = 0
+# imp[:, :, 1] = cv2.medianBlur(clahe.apply(imp[:, :, 1]), 3)
+# imp[:, :, 1][imp[:, :, 1] < 15] = 0
+# imp[:, :, 2] = cv2.medianBlur(clahe.apply(imp[:, :, 2]), 3)
+# imp[:, :, 2][imp[:, :, 2] < 15] = 0
+# rgb = np.uint8(np.clip(imp, 0, 255))
+# plt.figure()
+# plt.imshow(rgb)
+# plt.show()
+#
+# cv2.imwrite('G:\\MSU\\Intel\\Images_report\\segment.jpg', rgb)
+#
+# rgb2 = randomcrop(rgb, dim)
+# cv2.imwrite('G:\\MSU\\Intel\\Images_report\\random1.jpg', rgb2)
+# rgb2 = randomcrop(rgb, dim)
+# cv2.imwrite('G:\\MSU\\Intel\\Images_report\\random2.jpg', rgb2)
+# rgb2 = randomcrop(rgb, dim)
+# cv2.imwrite('G:\\MSU\\Intel\\Images_report\\random3.jpg', rgb2)
+# rgb2 = randomcrop(rgb, dim)
+# cv2.imwrite('G:\\MSU\\Intel\\Images_report\\random4.jpg', rgb2)
