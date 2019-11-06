@@ -7,6 +7,7 @@ import keras
 import cv2
 import random
 import gdal
+from data_utils import *
 
 
 class DataGenerator(keras.utils.Sequence):
@@ -102,14 +103,14 @@ class DataGenerator(keras.utils.Sequence):
 
         return mask
 
-    def randomcrop(self, im, d):
+    def randomcrop(self, im, m, d):
         t = 0
         im2 = im
         while t <= 0.8:  # makes sure that more than 80% of the cropped image is different than zero
             x = random.randint(0, im.shape[1] - d)
             y = random.randint(0, im.shape[0] - d)
             im2 = im[y:y + d, x:x + d]
-            r, c = np.nonzero(im2[:, :, 0])
+            r, c = np.nonzero(m[y:y+d, x:x+d])
             t = c.size / (im2.shape[0] * im2.shape[1])
 
         # Adds a random rotation
@@ -155,7 +156,13 @@ class DataGenerator(keras.utils.Sequence):
             img = img[rows.min():rows.max(), cols.min():cols.max(), :]
 
             # Apply random crop
-            img = self.randomcrop(img, self.dim)
+            img = self.randomcrop(img, msk, self.dim)
+
+            # Normalize data
+            m = get_max_avocado()
+            for nc in range(0, self.n_channels):
+                if m[nc] != 0:
+                    img[:, :, nc] = img[:, :, nc] / (m[nc])
 
             x[i, ] = np.reshape(img, (self.dim, self.dim, self.n_channels, 1))
             y[i, ] = [0 if 'b' in addr else 1]

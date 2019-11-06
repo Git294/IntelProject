@@ -4,7 +4,7 @@ import random
 import gdal
 import matplotlib.pyplot as plt
 
-dim = 128
+dim = 16
 n_channels = 290
 
 
@@ -69,14 +69,14 @@ def segment_produce(im):
     return mask
 
 
-def randomcrop(im, d):
+def randomcrop(im, m, d):
     t = 0
     im2 = im
-    while t <= 0.8:  # makes sure that more than 80% of the cropped image is different than zero
+    while t <= 0.9:  # makes sure that more than 80% of the cropped image is different than zero
         x = random.randint(0, im.shape[1] - d)
         y = random.randint(0, im.shape[0] - d)
-        im2 = im[y:y+d, x:x+d]
-        r, c = np.nonzero(im2[:, :, 0])
+        im2 = im[y:y+d, x:x+d, :]
+        r, c = np.nonzero(m[y:y+d, x:x+d])
         t = c.size / (im2.shape[0] * im2.shape[1])
 
     # Adds a random rotation
@@ -86,8 +86,8 @@ def randomcrop(im, d):
     return im2
 
 
-# addr = 'G:\\MSU\\Intel\\Training_Data\\Avocado_2class\\train\\bvocado_95.tiff'
-addr = 'G:\\MSU\\Intel\\Training_Data\\Tomato_2class\\fresh\\tomato_4.tiff'
+addr = 'G:\\MSU\\Intel\\Training_Data\\Avocado_2class\\train\\bvocado_95.tiff'
+# addr = 'G:\\MSU\\Intel\\Training_Data\\Tomato_2class\\fresh\\tomato_4.tiff'
 
 # Read image
 ds = gdal.Open(addr)
@@ -122,6 +122,8 @@ msk = segment_produce(img2)
 rows, cols = np.nonzero(msk)
 img[msk == 0] = np.zeros([1, img.shape[2]])    # change for img
 img = img[rows.min():rows.max(), cols.min():cols.max(), :]  # change for img
+
+rgb2 = randomcrop(img, msk, dim)
 
 # # Comment from here
 # # Get color image (R:121, G:77, B:33)

@@ -1,11 +1,12 @@
 import glob
 import os
+import math
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
 # from keras.utils import multi_gpu_model
 
 from DataGenerator import DataGenerator
-from networks import hsi1
+from networks import *
 
 import keras.backend as k
 k.set_image_data_format('channels_last')
@@ -32,9 +33,10 @@ addri_val = sorted(glob.glob(orig_path_val))
 
 # Parametros para la generación de data
 n_channels = 290
-dim = 256
+dim = 16
+batch_size = 1
 params = {'dim': dim,
-          'batch_size': 1,
+          'batch_size': batch_size,
           'n_channels': n_channels,
           'shuffle': True}
 
@@ -67,11 +69,11 @@ Entrenamiento
 
 # Load model
 print("Cargando modelo...")
-model = hsi1(img_shape=(dim, dim, n_channels, 1))
+model = attention1(img_shape=(dim, dim, n_channels, 1))
 model.summary()
 
 # Compile model
-optimizer = Adam(lr=0.003, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+optimizer = Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['acc'])
 
 # checkpoint
@@ -83,11 +85,13 @@ callbacks_list = [checkpoint]
 print("Empieza entrenamiento...")
 history = model.fit_generator(generator=training_generator,
                               validation_data=validation_generator,
+                              steps_per_epoch=math.ceil(len(addri_train) / batch_size),
                               use_multiprocessing=False,
-                              workers=1,
                               shuffle=True,
                               epochs=150,
                               max_queue_size=2,
                               callbacks=callbacks_list)
+
+model.save("hs1_attention.h5")
 
 print("Terminó entrenamiento!!!!")
